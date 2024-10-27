@@ -1,0 +1,4 @@
+# Ring Bell
+
+1. Simple ring-a-bell software.
+2. It has a web client for the person at the door, a backend, and a simple React Native mobile app client for the person behind the door.
