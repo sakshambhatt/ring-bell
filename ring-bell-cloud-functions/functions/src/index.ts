@@ -10,7 +10,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
 import { onRequest } from "firebase-functions/v2/https";
-const { defineString } = require("firebase-functions/params");
+import { defineString } from "firebase-functions/params";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
