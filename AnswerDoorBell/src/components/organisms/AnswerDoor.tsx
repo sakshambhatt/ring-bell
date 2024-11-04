@@ -1,6 +1,6 @@
 import {Text, StyleSheet, SafeAreaView, View} from 'react-native';
-import React, {useEffect} from 'react';
-import {FIREBASE_ENDPOINT} from '@env';
+import React, {useEffect, useState} from 'react';
+import {FIREBASE_ENDPOINT, CLIENT_APP_API_KEY} from '@env';
 import axios from 'axios';
 
 import commonStyles from '../../styles/common';
@@ -18,6 +18,13 @@ type User = {
 export default function AnswerDoor() {
   const [userId] = useMMKVString('userId');
   const [storedUserDetails, setStoredUserDetails] = useMMKVObject<User>('user');
+  const [tempUserDetails, setTempUserDetails] = useState<User>({
+    firstName: '',
+    lastName: '',
+    status: 'review-pending',
+  });
+
+  const userDetailsToConsume = storedUserDetails || tempUserDetails;
 
   const {apiStatus, setApiStatus} = useApiStatus();
 
@@ -34,10 +41,21 @@ export default function AnswerDoor() {
         try {
           const res = await axios.get(
             `${FIREBASE_ENDPOINT}/getGateKeeperDetailsById?id=${userId}`,
+            {
+              headers: {
+                'x-api-key': CLIENT_APP_API_KEY,
+              },
+            },
           );
 
           if (res.data.data.status === 'approved') {
             setStoredUserDetails({
+              firstName: res.data.data.firstName,
+              lastName: res.data.data.lastName,
+              status: res.data.data.status,
+            });
+          } else {
+            setTempUserDetails({
               firstName: res.data.data.firstName,
               lastName: res.data.data.lastName,
               status: res.data.data.status,
@@ -61,12 +79,20 @@ export default function AnswerDoor() {
   }, [setStoredUserDetails, storedUserDetails, userId]);
 
   const handleAnswerDoorPress = async () => {
-    if (storedUserDetails?.status === 'approved') {
+    if (userDetailsToConsume?.status === 'approved') {
       try {
         setApiStatus(prev => ({...prev, isLoading: true}));
-        await axios.post(`${FIREBASE_ENDPOINT}/answerVisit`, {
-          id: userId,
-        });
+        await axios.post(
+          `${FIREBASE_ENDPOINT}/answerVisit`,
+          {
+            id: userId,
+          },
+          {
+            headers: {
+              'x-api-key': CLIENT_APP_API_KEY,
+            },
+          },
+        );
         setApiStatus(prev => ({...prev, isSuccess: true}));
         showToast({
           type: 'success',
@@ -85,13 +111,13 @@ export default function AnswerDoor() {
       } finally {
         setApiStatus(prev => ({...prev, isLoading: false}));
       }
-    } else if (storedUserDetails?.status === 'rejected') {
+    } else if (userDetailsToConsume?.status === 'rejected') {
       showToast({
         type: 'error',
         text1: 'Gatekeeper authorisation rejected',
         text2: 'Contact admin',
       });
-    } else if (storedUserDetails?.status === 'review-pending') {
+    } else if (userDetailsToConsume?.status === 'review-pending') {
       showToast({
         type: 'info',
         text1: 'Gatekeeper authorization pending',
@@ -105,8 +131,8 @@ export default function AnswerDoor() {
       style={[commonStyles.backgroundStyle, commonStyles.safeAreaView]}>
       <View style={styles.answerDoorContainer}>
         <Text style={[commonStyles.text, commonStyles.heading]}>
-          Hi {storedUserDetails?.firstName}, press the below button if you are
-          opening the door
+          Hi {userDetailsToConsume?.firstName}, press the below button if you
+          are opening the door
         </Text>
 
         <AsyncButton

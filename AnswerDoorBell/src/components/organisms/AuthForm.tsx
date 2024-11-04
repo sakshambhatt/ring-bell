@@ -1,7 +1,7 @@
 import {Text, StyleSheet, SafeAreaView, View, TextInput} from 'react-native';
 import React, {useState} from 'react';
 import axios from 'axios';
-import {FIREBASE_ENDPOINT} from '@env';
+import {FIREBASE_ENDPOINT, CLIENT_APP_API_KEY} from '@env';
 
 import commonStyles from '../../styles/common';
 import showToast from '../../utils/toasts';
@@ -27,14 +27,21 @@ export default function AuthForm() {
 
       setApiStatus(prev => ({...prev, isLoading: true}));
       try {
-        const res = await axios.post(`${FIREBASE_ENDPOINT}/applyAsGateKeeper`, {
-          firstName,
-          lastName: lastNameToSubmit,
-        });
+        const res = await axios.post(
+          `${FIREBASE_ENDPOINT}/applyAsGateKeeper`,
+          {
+            firstName,
+            lastName: lastNameToSubmit,
+          },
+          {
+            headers: {
+              'x-api-key': CLIENT_APP_API_KEY,
+            },
+          },
+        );
         const {data} = res;
         if (data.success) {
           const userId = data.id;
-          console.log({data, userId});
           storage.set('userId', userId);
         }
         setApiStatus(prev => ({...prev, isSuccess: true}));
@@ -44,7 +51,6 @@ export default function AuthForm() {
           text2: null,
         });
       } catch (error) {
-        console.log({error: JSON.stringify(error)});
         setApiStatus(prev => ({...prev, isError: true}));
         showToast({
           type: 'error',
