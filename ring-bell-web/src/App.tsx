@@ -17,11 +17,15 @@ function App() {
       setBellStatus((prev) => ({ ...prev, isLoading: true }));
 
       const firebaseEndpoint = import.meta.env.VITE_FIREBASE_ENDPOINT;
-      await axios.post(`${firebaseEndpoint}/visit`, {
-        headers: {
-          "x-api-key": import.meta.env.VITE_CLIENT_APP_API_KEY,
-        },
-      });
+      await axios.post(
+        `${firebaseEndpoint}/visit`,
+        {},
+        {
+          headers: {
+            "x-api-key": import.meta.env.VITE_CLIENT_APP_API_KEY,
+          },
+        }
+      );
 
       setBellStatus((prev) => ({
         ...prev,
