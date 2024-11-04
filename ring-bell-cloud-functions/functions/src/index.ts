@@ -10,6 +10,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
 import { onRequest } from "firebase-functions/v2/https";
+const { defineString } = require("firebase-functions/params");
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -20,10 +21,24 @@ const gateKeeperStatus = {
   reviewPending: "review-pending",
 };
 
+const checkApiKey = (request: any) => {
+  const clientApiKey = defineString("CLIENT_API_KEY");
+  const hasValidApiKey = request.headers["x-api-key"] === clientApiKey.value();
+
+  return hasValidApiKey;
+};
+
 initializeApp();
 
 export const visit = onRequest(async (request, response) => {
-  // Check HTTP method
+  // START API KEY check
+  const hasValidApiKey = checkApiKey(request);
+  if (!hasValidApiKey) {
+    response.status(401).json({ error: "Request not authenticated" });
+    return;
+  }
+  // STOP API KEY check
+
   if (request.method === "POST") {
     try {
       // Get Firestore instance
@@ -50,6 +65,14 @@ export const visit = onRequest(async (request, response) => {
 });
 
 export const applyAsGateKeeper = onRequest(async (request, response) => {
+  // START API KEY check
+  const hasValidApiKey = checkApiKey(request);
+  if (!hasValidApiKey) {
+    response.status(401).json({ error: "Request not allowed" });
+    return;
+  }
+  // STOP API KEY check
+
   if (request.method === "POST") {
     try {
       const db = getFirestore();
@@ -83,71 +106,15 @@ export const applyAsGateKeeper = onRequest(async (request, response) => {
   }
 });
 
-// export const approveAsGateKeeper = onRequest(async (request, response) => {
-//   if (request.method === "POST") {
-//     try {
-//       // Get Firestore instance
-//       const db = getFirestore();
-
-//       // get user by document id
-//       const user = await db
-//         .collection("gate-keepers")
-//         .doc(request.body.id)
-//         .get();
-//       if (!user.exists) {
-//         response.status(404).json({ error: "User not found" });
-//         return;
-//       } else {
-//         // change status to approved
-//         await db
-//           .collection("gate-keepers")
-//           .doc(request.body.id)
-//           .update({ status: "approved" });
-//       }
-
-//       response.status(200).json({ success: true });
-// return;
-//     } catch (error) {
-//       logger.error("Error adding document: ", error);
-//       response.status(500).json({ error: "Failed to add gatekeeper" });
-// return;
-//     }
-//   }
-// });
-
-// export const rejectAsGateKeeper = onRequest(async (request, response) => {
-//   if (request.method === "POST") {
-//     try {
-//       // Get Firestore instance
-//       const db = getFirestore();
-
-//       // get user by document id
-//       const user = await db
-//         .collection("gate-keepers")
-//         .doc(request.body.id)
-//         .get();
-//       if (!user.exists) {
-//         response.status(404).json({ error: "User not found" });
-// return;
-//       } else {
-//         // change status to rejected
-//         await db
-//           .collection("gate-keepers")
-//           .doc(request.body.id)
-//           .update({ status: "rejected" });
-//       }
-
-//       response.status(200).json({ success: true });
-// return;
-//     } catch (error) {
-//       logger.error("Error adding document: ", error);
-//  response.status(500).json({ error: "Failed to add gatekeeper" });
-// return;
-//     }
-//   }
-// });
-
 export const getGateKeeperDetailsById = onRequest(async (request, response) => {
+  // START API KEY check
+  const hasValidApiKey = checkApiKey(request);
+  if (!hasValidApiKey) {
+    response.status(401).json({ error: "Request not allowed" });
+    return;
+  }
+  // STOP API KEY check
+
   if (request.method === "GET") {
     try {
       const db = getFirestore();
@@ -179,6 +146,14 @@ export const getGateKeeperDetailsById = onRequest(async (request, response) => {
 });
 
 export const answerVisit = onRequest(async (request, response) => {
+  // START API KEY check
+  const hasValidApiKey = checkApiKey(request);
+  if (!hasValidApiKey) {
+    response.status(401).json({ error: "Request not allowed" });
+    return;
+  }
+  // STOP API KEY check
+
   if (request.method === "POST") {
     try {
       const db = getFirestore();
