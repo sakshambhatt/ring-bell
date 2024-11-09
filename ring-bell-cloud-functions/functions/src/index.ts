@@ -30,6 +30,21 @@ const checkApiKey = (request: any) => {
 
 initializeApp();
 
+export const healthCheck = onRequest(async (request, response) => {
+  switch (request.method) {
+  case "GET":
+    response.status(200).json({ data: "GET method" });
+    break;
+  case "POST":
+    response.status(200).json({ data: "POST method" });
+    break;
+  default:
+    response.status(200).json({ data: "default method" });
+    break;
+  }
+  return;
+});
+
 export const visit = onRequest(async (request, response) => {
   // START API KEY check
   const hasValidApiKey = checkApiKey(request);

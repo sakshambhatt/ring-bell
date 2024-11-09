@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import LoadingSpinner from "./assets/loading-spinner.svg?react";
 import "./App.css";
+const firebaseEndpoint = import.meta.env.VITE_FIREBASE_ENDPOINT;
 
 function App() {
   const defaultBellStatus = {
@@ -12,11 +13,31 @@ function App() {
 
   const [bellStatus, setBellStatus] = useState(defaultBellStatus);
 
+  useEffect(() => {
+    let ignore = false;
+
+    const getApiStatus = async () => {
+      try {
+        const res = await axios.get(`${firebaseEndpoint}/healthCheck`);
+        console.log({ res });
+      } catch (e) {
+        console.error({ e });
+      }
+    };
+
+    if (!ignore) {
+      getApiStatus();
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const handleBellPress = async () => {
     try {
       setBellStatus((prev) => ({ ...prev, isLoading: true }));
 
-      const firebaseEndpoint = import.meta.env.VITE_FIREBASE_ENDPOINT;
       await axios.post(
         `${firebaseEndpoint}/visit`,
         {},
