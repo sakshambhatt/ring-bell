@@ -9,7 +9,6 @@
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
-import { onRequest } from "firebase-functions/v2/https";
 import { defineString } from "firebase-functions/params";
 import { https } from "firebase-functions/v2";
 import type { HttpsFunction } from "firebase-functions/v2/https";
@@ -64,7 +63,7 @@ export const healthCheck = corsHandler(
   }
 );
 
-export const visit = onRequest(async (request, response) => {
+export const visit = corsHandler(async (request, response) => {
   // START API KEY check
   const hasValidApiKey = checkApiKey(request);
   if (!hasValidApiKey) {
@@ -98,7 +97,7 @@ export const visit = onRequest(async (request, response) => {
   }
 });
 
-export const applyAsGateKeeper = onRequest(async (request, response) => {
+export const applyAsGateKeeper = corsHandler(async (request, response) => {
   // START API KEY check
   const hasValidApiKey = checkApiKey(request);
   if (!hasValidApiKey) {
@@ -140,46 +139,52 @@ export const applyAsGateKeeper = onRequest(async (request, response) => {
   }
 });
 
-export const getGateKeeperDetailsById = onRequest(async (request, response) => {
-  // START API KEY check
-  const hasValidApiKey = checkApiKey(request);
-  if (!hasValidApiKey) {
-    response.status(401).json({ error: "Request not allowed" });
-    return;
-  }
-  // STOP API KEY check
-
-  if (request.method === "GET") {
-    try {
-      const db = getFirestore();
-
-      if (request.query.id !== undefined) {
-        // get user by document id
-        const gateKeeper = await db
-          .collection("gate-keepers")
-          .doc(request.query.id as string)
-          .get();
-
-        if (!gateKeeper.exists) {
-          response.status(404).json({ error: "Gatekeeper not found" });
-          return;
-        } else {
-          response.status(200).json({ success: true, data: gateKeeper.data() });
-          return;
-        }
-      } else {
-        response.status(400).json({ error: "Missing id" });
-        return;
-      }
-    } catch (error) {
-      logger.error("Error adding document: ", error);
-      response.status(500).json({ error: "Failed to get gatekeeper details" });
+export const getGateKeeperDetailsById = corsHandler(
+  async (request, response) => {
+    // START API KEY check
+    const hasValidApiKey = checkApiKey(request);
+    if (!hasValidApiKey) {
+      response.status(401).json({ error: "Request not allowed" });
       return;
     }
-  }
-});
+    // STOP API KEY check
 
-export const answerVisit = onRequest(async (request, response) => {
+    if (request.method === "GET") {
+      try {
+        const db = getFirestore();
+
+        if (request.query.id !== undefined) {
+          // get user by document id
+          const gateKeeper = await db
+            .collection("gate-keepers")
+            .doc(request.query.id as string)
+            .get();
+
+          if (!gateKeeper.exists) {
+            response.status(404).json({ error: "Gatekeeper not found" });
+            return;
+          } else {
+            response
+              .status(200)
+              .json({ success: true, data: gateKeeper.data() });
+            return;
+          }
+        } else {
+          response.status(400).json({ error: "Missing id" });
+          return;
+        }
+      } catch (error) {
+        logger.error("Error adding document: ", error);
+        response
+          .status(500)
+          .json({ error: "Failed to get gatekeeper details" });
+        return;
+      }
+    }
+  }
+);
+
+export const answerVisit = corsHandler(async (request, response) => {
   // START API KEY check
   const hasValidApiKey = checkApiKey(request);
   if (!hasValidApiKey) {
