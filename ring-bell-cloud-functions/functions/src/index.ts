@@ -11,9 +11,26 @@ import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
 import { onRequest } from "firebase-functions/v2/https";
 import { defineString } from "firebase-functions/params";
+import { https } from "firebase-functions/v2";
+import type { HttpsFunction } from "firebase-functions/v2/https";
+import cors from "cors";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+const corsMiddleware = cors({
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:4000",
+    "https://ring-doorbell.netlify.app", // Removed trailing slash
+  ],
+  credentials: true,
+});
+
+const corsHandler = (
+  handler: (req: https.Request, res: any) => Promise<void>
+): HttpsFunction => {
+  return https.onRequest((request, response) => {
+    return corsMiddleware(request, response, () => handler(request, response));
+  });
+};
 
 const gateKeeperStatus = {
   approved: "approved",
@@ -30,20 +47,22 @@ const checkApiKey = (request: any) => {
 
 initializeApp();
 
-export const healthCheck = onRequest(async (request, response) => {
-  switch (request.method) {
-  case "GET":
-    response.status(200).json({ data: "GET method" });
-    break;
-  case "POST":
-    response.status(200).json({ data: "POST method" });
-    break;
-  default:
-    response.status(200).json({ data: "default method" });
-    break;
+export const healthCheck = corsHandler(
+  async (request: https.Request, response: any) => {
+    switch (request.method) {
+    case "GET":
+      response.status(200).json({ data: "GET method" });
+      break;
+    case "POST":
+      response.status(200).json({ data: "POST method" });
+      break;
+    default:
+      response.status(200).json({ data: "default method" });
+      break;
+    }
+    return;
   }
-  return;
-});
+);
 
 export const visit = onRequest(async (request, response) => {
   // START API KEY check
