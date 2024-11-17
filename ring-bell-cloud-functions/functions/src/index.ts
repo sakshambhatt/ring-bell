@@ -6,6 +6,7 @@
  *
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
+import admin from "firebase-admin";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
@@ -49,15 +50,15 @@ initializeApp();
 export const healthCheck = corsHandler(
   async (request: https.Request, response: any) => {
     switch (request.method) {
-    case "GET":
-      response.status(200).json({ data: "GET method" });
-      break;
-    case "POST":
-      response.status(200).json({ data: "POST method" });
-      break;
-    default:
-      response.status(200).json({ data: "default method" });
-      break;
+      case "GET":
+        response.status(200).json({ data: "GET method" });
+        break;
+      case "POST":
+        response.status(200).json({ data: "POST method" });
+        break;
+      default:
+        response.status(200).json({ data: "default method" });
+        break;
     }
     return;
   }
@@ -77,13 +78,36 @@ export const visit = corsHandler(async (request, response) => {
       // Get Firestore instance
       const db = getFirestore();
 
-      // Add document to 'visits' collection
-      const result = await db.collection("visits").add({
-        answeredBy: null,
-        time: new Date().toUTCString(),
-      });
+      // Get tokens for all gatekeepers
+      const getGateKeepersSnapshots = async () =>
+        await db.collection("gate-keepers").get();
 
-      response.status(200).json({ success: true, id: result.id });
+      // Add document to 'visits' collection
+      const addRecordToVisits = async () =>
+        await db.collection("visits").add({
+          answeredBy: null,
+          time: new Date().toUTCString(),
+        });
+
+      const promises = [getGateKeepersSnapshots(), addRecordToVisits()];
+      const responses = await Promise.all(promises);
+
+      if ("docs" in responses[0]) {
+        const gateKeepersFcmTokens = responses[0].docs.map(
+          (doc) => doc.data().token
+        );
+
+        // Send notifications to the devices
+        await admin.messaging().sendEachForMulticast({
+          tokens: gateKeepersFcmTokens,
+          notification: {
+            title: "Ding dong!",
+            body: "Someone's at the door...",
+          },
+        });
+      }
+
+      response.status(200).json({ success: true });
       return;
     } catch (error) {
       logger.error("Error adding document: ", error);
