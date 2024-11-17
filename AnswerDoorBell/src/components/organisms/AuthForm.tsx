@@ -1,5 +1,6 @@
 import {Text, StyleSheet, SafeAreaView, View, TextInput} from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
+import messaging from '@react-native-firebase/messaging';
 import axios from 'axios';
 import {FIREBASE_ENDPOINT, CLIENT_APP_API_KEY} from '@env';
 
@@ -12,11 +13,31 @@ import useApiStatus from '../../hooks/useApiStatus';
 export default function AuthForm() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const fcmTokenRef = useRef<any>(null);
 
   const [isInputErrorVisible, setIsInputErrorVisible] = useState(false);
 
   const storage = useMmkv();
   const {apiStatus, setApiStatus} = useApiStatus();
+
+  useEffect(() => {
+    let ignore = false;
+
+    const getFcmToken = async () => {
+      await messaging().registerDeviceForRemoteMessages();
+      const token = await messaging().getToken();
+      return token;
+    };
+
+    if (!ignore) {
+      const token = getFcmToken();
+      fcmTokenRef.current = token;
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const handleSubmit = async () => {
     const isFirstNameValid = firstName.length > 1;
@@ -32,6 +53,7 @@ export default function AuthForm() {
           {
             firstName,
             lastName: lastNameToSubmit,
+            token: fcmTokenRef.current._j,
           },
           {
             headers: {
