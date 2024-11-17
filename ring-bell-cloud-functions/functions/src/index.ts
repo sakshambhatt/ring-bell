@@ -50,15 +50,15 @@ initializeApp();
 export const healthCheck = corsHandler(
   async (request: https.Request, response: any) => {
     switch (request.method) {
-    case "GET":
-      response.status(200).json({ data: "GET method" });
-      break;
-    case "POST":
-      response.status(200).json({ data: "POST method" });
-      break;
-    default:
-      response.status(200).json({ data: "default method" });
-      break;
+      case "GET":
+        response.status(200).json({ data: "GET method" });
+        break;
+      case "POST":
+        response.status(200).json({ data: "POST method" });
+        break;
+      default:
+        response.status(200).json({ data: "default method" });
+        break;
     }
     return;
   }
@@ -93,8 +93,19 @@ export const visit = corsHandler(async (request, response) => {
       const responses = await Promise.all(promises);
 
       if ("docs" in responses[0]) {
-        const gateKeepersFcmTokens = responses[0].docs.map(
-          (doc) => doc.data().token
+        const gateKeepers = responses[0].docs.map((doc) => {
+          return {
+            token: doc.data().token,
+            status: doc.data().status,
+            firstName: doc.data().firstName,
+          };
+        });
+
+        const approvedGateKeepers = gateKeepers.filter(
+          (gateKeeper) => gateKeeper.status === "approved"
+        );
+        const gateKeepersFcmTokens = approvedGateKeepers.map(
+          (gateKeeper) => gateKeeper.token
         );
 
         // Send notifications to the devices
@@ -114,7 +125,10 @@ export const visit = corsHandler(async (request, response) => {
             },
           },
         });
-        logger.info({ dateTime: new Date().toUTCString(), results });
+        logger.info({
+          results,
+          approvedGateKeepers,
+        });
       }
 
       response.status(200).json({ success: true });
