@@ -125,6 +125,7 @@ export const applyAsGateKeeper = corsHandler(async (request, response) => {
           firstName: request.body.firstName,
           lastName:
             request.body.lastName.length > 0 ? request.body.lastName : ".",
+          token: request.body.token,
           status: "review-pending",
           time: new Date().toUTCString(),
         });
