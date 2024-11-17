@@ -50,15 +50,15 @@ initializeApp();
 export const healthCheck = corsHandler(
   async (request: https.Request, response: any) => {
     switch (request.method) {
-      case "GET":
-        response.status(200).json({ data: "GET method" });
-        break;
-      case "POST":
-        response.status(200).json({ data: "POST method" });
-        break;
-      default:
-        response.status(200).json({ data: "default method" });
-        break;
+    case "GET":
+      response.status(200).json({ data: "GET method" });
+      break;
+    case "POST":
+      response.status(200).json({ data: "POST method" });
+      break;
+    default:
+      response.status(200).json({ data: "default method" });
+      break;
     }
     return;
   }
@@ -98,7 +98,7 @@ export const visit = corsHandler(async (request, response) => {
         );
 
         // Send notifications to the devices
-        await admin.messaging().sendEachForMulticast({
+        const results = await admin.messaging().sendEachForMulticast({
           tokens: gateKeepersFcmTokens,
           notification: {
             title: "Ding dong!",
@@ -114,6 +114,7 @@ export const visit = corsHandler(async (request, response) => {
             },
           },
         });
+        logger.info({ dateTime: new Date().toUTCString(), results });
       }
 
       response.status(200).json({ success: true });
