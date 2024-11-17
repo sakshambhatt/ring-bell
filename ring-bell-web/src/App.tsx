@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import LoadingSpinner from "./assets/loading-spinner.svg?react";
 import "./App.css";
@@ -12,27 +12,6 @@ function App() {
   };
 
   const [bellStatus, setBellStatus] = useState(defaultBellStatus);
-
-  useEffect(() => {
-    let ignore = false;
-
-    const getApiStatus = async () => {
-      try {
-        const res = await axios.get(`${firebaseEndpoint}/healthCheck`);
-        console.log({ res });
-      } catch (e) {
-        console.error({ e });
-      }
-    };
-
-    if (!ignore) {
-      getApiStatus();
-    }
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
 
   const handleBellPress = async () => {
     try {
