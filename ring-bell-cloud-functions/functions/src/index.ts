@@ -104,6 +104,15 @@ export const visit = corsHandler(async (request, response) => {
             title: "Ding dong!",
             body: "Someone's at the door...",
           },
+          android: {
+            priority: "high",
+            notification: {
+              channelId: "sound_channel",
+              priority: "high",
+              defaultSound: false,
+              sound: "ring_bell",
+            },
+          },
         });
       }
 
