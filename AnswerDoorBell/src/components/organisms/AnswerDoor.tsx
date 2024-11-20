@@ -1,13 +1,14 @@
 import {Text, StyleSheet, SafeAreaView, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {FIREBASE_ENDPOINT, CLIENT_APP_API_KEY} from '@env';
+import {useMMKVObject, useMMKVString} from 'react-native-mmkv';
 import axios from 'axios';
 
 import commonStyles from '../../styles/common';
 import showToast from '../../utils/toasts';
 import AsyncButton from '../atoms/AsyncButton';
-import {useMMKVObject, useMMKVString} from 'react-native-mmkv';
 import useApiStatus from '../../hooks/useApiStatus';
+import logEvent from '../../utils/logEvent';
 
 type User = {
   firstName: string;
@@ -32,51 +33,63 @@ export default function AnswerDoor() {
     let ignore = false;
 
     const fetchUserDetails = async () => {
-      if (!ignore && typeof storedUserDetails === 'undefined' && userId) {
-        showToast({
-          type: 'info',
-          text1: 'Fetching user details',
-          text2: null,
-        });
-        try {
-          const res = await axios.get(
-            `${FIREBASE_ENDPOINT}/getGateKeeperDetailsById?id=${userId}`,
-            {
-              headers: {
-                'x-api-key': CLIENT_APP_API_KEY,
-              },
+      showToast({
+        type: 'info',
+        text1: 'Fetching user details',
+        text2: null,
+      });
+      try {
+        const res = await axios.get(
+          `${FIREBASE_ENDPOINT}/getGateKeeperDetailsById?id=${userId}`,
+          {
+            headers: {
+              'x-api-key': CLIENT_APP_API_KEY,
             },
-          );
+          },
+        );
 
-          if (res.data.data.status === 'approved') {
-            setStoredUserDetails({
-              firstName: res.data.data.firstName,
-              lastName: res.data.data.lastName,
-              status: res.data.data.status,
-            });
-          } else {
-            setTempUserDetails({
-              firstName: res.data.data.firstName,
-              lastName: res.data.data.lastName,
-              status: res.data.data.status,
-            });
-          }
-        } catch (error) {
-          showToast({
-            type: 'error',
-            text1: 'Failed to get gatekeeper details',
-            text2: null,
+        if (res.data.data.status === 'approved') {
+          setStoredUserDetails({
+            firstName: res.data.data.firstName,
+            lastName: res.data.data.lastName,
+            status: res.data.data.status,
+          });
+        } else {
+          setTempUserDetails({
+            firstName: res.data.data.firstName,
+            lastName: res.data.data.lastName,
+            status: res.data.data.status,
           });
         }
+      } catch (error) {
+        showToast({
+          type: 'error',
+          text1: 'Failed to get gatekeeper details',
+          text2: null,
+        });
       }
     };
 
-    fetchUserDetails();
+    if (!ignore && typeof storedUserDetails === 'undefined' && userId) {
+      fetchUserDetails();
+    }
+
+    if (!ignore) {
+      logEvent({
+        eventName: 'appOpened',
+        attributes: {firstName: userDetailsToConsume?.firstName},
+      });
+    }
 
     return () => {
       ignore = true;
     };
-  }, [setStoredUserDetails, storedUserDetails, userId]);
+  }, [
+    setStoredUserDetails,
+    storedUserDetails,
+    userDetailsToConsume?.firstName,
+    userId,
+  ]);
 
   const handleAnswerDoorPress = async () => {
     if (userDetailsToConsume?.status === 'approved') {

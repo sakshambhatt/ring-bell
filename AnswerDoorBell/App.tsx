@@ -1,16 +1,19 @@
 import React, {useEffect} from 'react';
 import {
+  Alert,
   SafeAreaView,
   ScrollView,
   Platform,
   PermissionsAndroid,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import {useMMKVString} from 'react-native-mmkv';
+import messaging from '@react-native-firebase/messaging';
 import AuthForm from './src/components/organisms/AuthForm';
 import AnswerDoor from './src/components/organisms/AnswerDoor';
 import commonStyles from './src/styles/common';
-import {useMMKVString} from 'react-native-mmkv';
 import showToast from './src/utils/toasts';
+import logEvent from './src/utils/logEvent';
 
 function App(): React.JSX.Element {
   const [userId] = useMMKVString('userId');
@@ -60,6 +63,35 @@ function App(): React.JSX.Element {
     return () => {
       ignore = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      logEvent({
+        eventName: 'notifReceived',
+        attributes: {time: new Date().toUTCString(), type: 'foreground'},
+      });
+
+      Alert.alert(
+        remoteMessage.notification?.title || 'Hello',
+        remoteMessage.notification?.body || 'Please open the door...',
+        [
+          {
+            text: 'OK',
+            onPress: () =>
+              logEvent({
+                eventName: 'interactedWithNotif',
+                attributes: {
+                  type: 'foreground',
+                  remoteMessage: JSON.stringify(remoteMessage),
+                },
+              }),
+          },
+        ],
+      );
+    });
+
+    return unsubscribe;
   }, []);
 
   return (

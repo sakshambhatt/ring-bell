@@ -9,6 +9,7 @@ import showToast from '../../utils/toasts';
 import useMmkv from '../../hooks/useMmkv';
 import AsyncButton from '../atoms/AsyncButton';
 import useApiStatus from '../../hooks/useApiStatus';
+import logEvent from '../../utils/logEvent';
 
 export default function AuthForm() {
   const [firstName, setFirstName] = useState('');
@@ -32,6 +33,10 @@ export default function AuthForm() {
     if (!ignore) {
       const token = getFcmToken();
       fcmTokenRef.current = token;
+
+      if (!ignore) {
+        logEvent({eventName: 'appOpened', attributes: {}});
+      }
     }
 
     return () => {
