@@ -78,8 +78,9 @@ function App() {
           : null}
       </p>
 
-      <button onClick={handleBellPress}>
-        Press me {bellStatus.isLoading ? <LoadingSpinner /> : null}
+      <button onClick={handleBellPress} className="btn-neumorphic">
+        <p style={{ fontSize: "2em" }}>🔔</p>
+        {bellStatus.isLoading ? <LoadingSpinner /> : null}
       </button>
     </>
   );
