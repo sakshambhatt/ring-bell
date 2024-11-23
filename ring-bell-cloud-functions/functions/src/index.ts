@@ -325,8 +325,6 @@ export const changeGateKeeperStatus = corsHandler(async (request, response) => {
             .doc(gateKeeperId)
             .get();
 
-          console.log({ updatedGateKeeper: updatedGateKeeper.data() });
-
           response.status(200).json({
             success: true,
             data: updatedGateKeeper.data(),
