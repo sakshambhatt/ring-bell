@@ -24,44 +24,42 @@ export default function AnswerDoor() {
 
   const {apiStatus, setApiStatus} = useApiStatus();
 
-  const fetchUserDetails = useCallback(() => {
-    async () => {
-      showToast({
-        type: 'info',
-        text1: 'Fetching user details',
-        text2: null,
-      });
-      try {
-        const res = await axios.get(
-          `${FIREBASE_ENDPOINT}/getGateKeeperDetailsById?id=${userId}`,
-          {
-            headers: {
-              'x-api-key': CLIENT_APP_API_KEY,
-            },
+  const fetchUserDetails = useCallback(async () => {
+    showToast({
+      type: 'info',
+      text1: 'Fetching user details',
+      text2: null,
+    });
+    try {
+      const res = await axios.get(
+        `${FIREBASE_ENDPOINT}/getGateKeeperDetailsById?id=${userId}`,
+        {
+          headers: {
+            'x-api-key': CLIENT_APP_API_KEY,
           },
-        );
+        },
+      );
 
-        if (res.data.data.status === 'approved') {
-          setStoredUserDetails({
-            firstName: res.data.data.firstName,
-            lastName: res.data.data.lastName,
-            status: res.data.data.status,
-          });
-        } else {
-          setTempUserDetails({
-            firstName: res.data.data.firstName,
-            lastName: res.data.data.lastName,
-            status: res.data.data.status,
-          });
-        }
-      } catch (error) {
-        showToast({
-          type: 'error',
-          text1: 'Failed to get gatekeeper details',
-          text2: null,
+      if (res.data.data.status === 'approved') {
+        setStoredUserDetails({
+          firstName: res.data.data.firstName,
+          lastName: res.data.data.lastName,
+          status: res.data.data.status,
+        });
+      } else {
+        setTempUserDetails({
+          firstName: res.data.data.firstName,
+          lastName: res.data.data.lastName,
+          status: res.data.data.status,
         });
       }
-    };
+    } catch (error) {
+      showToast({
+        type: 'error',
+        text1: 'Failed to get gatekeeper details',
+        text2: null,
+      });
+    }
   }, [setStoredUserDetails, userId]);
 
   useEffect(() => {
