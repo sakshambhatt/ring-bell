@@ -1,5 +1,5 @@
 import {Text, StyleSheet, SafeAreaView, View} from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {FIREBASE_ENDPOINT, CLIENT_APP_API_KEY} from '@env';
 import {useMMKVObject, useMMKVString} from 'react-native-mmkv';
 import axios from 'axios';
@@ -9,12 +9,7 @@ import showToast from '../../utils/toasts';
 import AsyncButton from '../atoms/AsyncButton';
 import useApiStatus from '../../hooks/useApiStatus';
 import logEvent from '../../utils/logEvent';
-
-type User = {
-  firstName: string;
-  lastName: string;
-  status: 'approved' | 'rejected' | 'review-pending';
-};
+import {User} from '../../types/User';
 
 export default function AnswerDoor() {
   const [userId] = useMMKVString('userId');
@@ -29,10 +24,8 @@ export default function AnswerDoor() {
 
   const {apiStatus, setApiStatus} = useApiStatus();
 
-  useEffect(() => {
-    let ignore = false;
-
-    const fetchUserDetails = async () => {
+  const fetchUserDetails = useCallback(() => {
+    async () => {
       showToast({
         type: 'info',
         text1: 'Fetching user details',
@@ -69,6 +62,10 @@ export default function AnswerDoor() {
         });
       }
     };
+  }, [setStoredUserDetails, userId]);
+
+  useEffect(() => {
+    let ignore = false;
 
     if (!ignore && typeof storedUserDetails === 'undefined' && userId) {
       fetchUserDetails();
@@ -85,7 +82,7 @@ export default function AnswerDoor() {
       ignore = true;
     };
   }, [
-    setStoredUserDetails,
+    fetchUserDetails,
     storedUserDetails,
     userDetailsToConsume?.firstName,
     userId,
