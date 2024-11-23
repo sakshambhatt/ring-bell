@@ -1,21 +1,16 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import axios from "axios";
 import LoadingSpinner from "./assets/loading-spinner.svg?react";
 import "./App.css";
+import useApiStatus from "./hooks/useApiStatus";
 const firebaseEndpoint = import.meta.env.VITE_FIREBASE_ENDPOINT;
 
 function App() {
-  const defaultBellStatus = {
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-  };
-
-  const [bellStatus, setBellStatus] = useState(defaultBellStatus);
+  const { apiStatus, setApiStatus } = useApiStatus();
 
   const handleBellPress = async () => {
     try {
-      setBellStatus((prev) => ({ ...prev, isLoading: true }));
+      setApiStatus((prev) => ({ ...prev, isLoading: true }));
 
       await axios.post(
         `${firebaseEndpoint}/visit`,
@@ -27,19 +22,19 @@ function App() {
         }
       );
 
-      setBellStatus((prev) => ({
+      setApiStatus((prev) => ({
         ...prev,
         isSuccess: true,
         isError: false,
       }));
     } catch (error) {
-      setBellStatus((prev) => ({
+      setApiStatus((prev) => ({
         ...prev,
         isSuccess: false,
         isError: true,
       }));
     } finally {
-      setBellStatus((prev) => ({
+      setApiStatus((prev) => ({
         ...prev,
         isLoading: false,
       }));
@@ -72,15 +67,18 @@ function App() {
       <h1>Press to ring bell</h1>
 
       <p>
-        {bellStatus.isSuccess ? "Ding dong! Door will open soon..." : null}
-        {bellStatus.isError
+        {apiStatus.isSuccess ? "Ding dong! Door will open soon..." : null}
+        {apiStatus.isError
           ? "Bell failed! Please press button again to ring bell..."
           : null}
       </p>
 
-      <button onClick={handleBellPress} className="btn-neumorphic">
+      <button
+        onClick={handleBellPress}
+        className="btn-neumorphic btn-neumorphic--vertical btn-neumorphic--extra-padding"
+      >
         <p style={{ fontSize: "2em" }}>🔔</p>
-        {bellStatus.isLoading ? <LoadingSpinner /> : null}
+        {apiStatus.isLoading ? <LoadingSpinner /> : null}
       </button>
     </>
   );
