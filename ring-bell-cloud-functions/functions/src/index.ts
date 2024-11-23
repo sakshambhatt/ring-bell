@@ -45,20 +45,24 @@ const checkApiKey = (request: any) => {
   return hasValidApiKey;
 };
 
+// Get tokens for all gatekeepers
+const getGateKeepersSnapshots = async (db: admin.firestore.Firestore) =>
+  await db.collection("gate-keepers").get();
+
 initializeApp();
 
 export const healthCheck = corsHandler(
   async (request: https.Request, response: any) => {
     switch (request.method) {
-      case "GET":
-        response.status(200).json({ data: "GET method" });
-        break;
-      case "POST":
-        response.status(200).json({ data: "POST method" });
-        break;
-      default:
-        response.status(200).json({ data: "default method" });
-        break;
+    case "GET":
+      response.status(200).json({ data: "GET method" });
+      break;
+    case "POST":
+      response.status(200).json({ data: "POST method" });
+      break;
+    default:
+      response.status(200).json({ data: "default method" });
+      break;
     }
     return;
   }
@@ -78,10 +82,6 @@ export const visit = corsHandler(async (request, response) => {
       // Get Firestore instance
       const db = getFirestore();
 
-      // Get tokens for all gatekeepers
-      const getGateKeepersSnapshots = async () =>
-        await db.collection("gate-keepers").get();
-
       // Add document to 'visits' collection
       const addRecordToVisits = async () =>
         await db.collection("visits").add({
@@ -89,7 +89,7 @@ export const visit = corsHandler(async (request, response) => {
           time: new Date().toUTCString(),
         });
 
-      const promises = [getGateKeepersSnapshots(), addRecordToVisits()];
+      const promises = [getGateKeepersSnapshots(db), addRecordToVisits()];
       const responses = await Promise.all(promises);
 
       if ("docs" in responses[0]) {
@@ -185,6 +185,52 @@ export const applyAsGateKeeper = corsHandler(async (request, response) => {
       response.status(500).json({ error: "Failed to add gatekeeper" });
       return;
     }
+  } else {
+    // Handle other methods or send error
+    response.status(405).send("Method not allowed");
+    return;
+  }
+});
+
+export const getAllGateKeepers = corsHandler(async (request, response) => {
+  // START API KEY check
+  const hasValidApiKey = checkApiKey(request);
+  if (!hasValidApiKey) {
+    response.status(401).json({ error: "Request not allowed" });
+    return;
+  }
+  // STOP API KEY check
+
+  if (request.method === "POST") {
+    const pinCode = defineString("PIN_CODE");
+    if (request.body.pin === pinCode.value()) {
+      try {
+        const db = getFirestore();
+
+        // get all gatekeepers
+        const gateKeepersSnapshots = await getGateKeepersSnapshots(db);
+
+        const gateKeepers = gateKeepersSnapshots.docs.map((doc) => {
+          return {
+            id: doc.id,
+            status: doc.data().status,
+            firstName: doc.data().firstName,
+          };
+        });
+        response.status(200).json({ success: true, data: gateKeepers });
+        return;
+      } catch (error) {
+        logger.error("Error adding document: ", error);
+        response.status(500).json({ error: "Failed to get gatekeepers" });
+        return;
+      }
+    } else {
+      response.status(403).json({ error: "Invalid admin pin code" });
+    }
+  } else {
+    // Handle other methods or send error
+    response.status(405).send("Method not allowed");
+    return;
   }
 });
 
@@ -229,9 +275,79 @@ export const getGateKeeperDetailsById = corsHandler(
           .json({ error: "Failed to get gatekeeper details" });
         return;
       }
+    } else {
+      // Handle other methods or send error
+      response.status(405).send("Method not allowed");
+      return;
     }
   }
 );
+
+export const changeGateKeeperStatus = corsHandler(async (request, response) => {
+  // START API KEY check
+  const hasValidApiKey = checkApiKey(request);
+  if (!hasValidApiKey) {
+    response.status(401).json({ error: "Request not allowed" });
+    return;
+  }
+  // STOP API KEY check
+
+  if (request.method === "POST") {
+    try {
+      const db = getFirestore();
+
+      if (
+        request.body.id !== undefined &&
+        request.body.newStatus !== undefined
+      ) {
+        const gateKeeperId = request.body.id as string;
+        const newStatus = request.body.newStatus as string;
+
+        // get user by document id
+        const gateKeeper = await db
+          .collection("gate-keepers")
+          .doc(gateKeeperId as string)
+          .get();
+
+        if (!gateKeeper.exists) {
+          response.status(404).json({ error: "Gatekeeper not found" });
+          return;
+        } else {
+          // Update the gatekeeper's status
+          await db
+            .collection("gate-keepers")
+            .doc(gateKeeperId)
+            .update({ status: newStatus });
+
+          // Fetch the updated document
+          const updatedGateKeeper = await db
+            .collection("gate-keepers")
+            .doc(gateKeeperId)
+            .get();
+
+          console.log({ updatedGateKeeper: updatedGateKeeper.data() });
+
+          response.status(200).json({
+            success: true,
+            data: updatedGateKeeper.data(),
+          });
+          return;
+        }
+      } else {
+        response.status(400).json({ error: "Missing id or new status" });
+        return;
+      }
+    } catch (error) {
+      logger.error("Error adding document: ", error);
+      response.status(500).json({ error: "Failed to get gatekeeper details" });
+      return;
+    }
+  } else {
+    // Handle other methods or send error
+    response.status(405).send("Method not allowed");
+    return;
+  }
+});
 
 export const answerVisit = corsHandler(async (request, response) => {
   // START API KEY check
@@ -301,5 +417,9 @@ export const answerVisit = corsHandler(async (request, response) => {
       response.status(500).json({ error: "Failed to answer visit" });
       return;
     }
+  } else {
+    // Handle other methods or send error
+    response.status(405).send("Method not allowed");
+    return;
   }
 });
