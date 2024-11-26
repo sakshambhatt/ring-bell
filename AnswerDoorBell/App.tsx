@@ -5,6 +5,7 @@ import {
   ScrollView,
   Platform,
   PermissionsAndroid,
+  Vibration,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import {useMMKVString} from 'react-native-mmkv';
@@ -85,6 +86,7 @@ function App(): React.JSX.Element {
     }
 
     const unsubscribe = messaging().onMessage(async remoteMessage => {
+      Vibration.vibrate([0, 400, 400, 800]);
       logEvent({
         eventName: 'notifReceived',
         attributes: {time: new Date().toUTCString(), type: 'foreground'},
