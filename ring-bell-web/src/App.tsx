@@ -76,6 +76,7 @@ function App() {
       <button
         onClick={handleBellPress}
         className="btn-neumorphic btn-neumorphic--vertical btn-neumorphic--extra-padding"
+        disabled={apiStatus.isLoading}
       >
         <p style={{ fontSize: "2em" }}>🔔</p>
         {apiStatus.isLoading ? <LoadingSpinner /> : null}
